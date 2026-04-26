@@ -12,10 +12,11 @@ End state: live site at `https://alex-wu.github.io`, auto-deploys on `git push`.
 node --version    # >= v22
 npm --version
 git --version
-ssh -T git@github.com   # should say "Hi alex-wu!" — if not, add SSH key to GitHub
 ```
 
 If Node < 22, install via Volta: `volta install node@22`.
+
+GitHub auth: this guide uses HTTPS. On first `git push`, Git Credential Manager opens a browser to sign you in — no SSH key setup needed.
 
 Working dir: `D:\Dev\Github\alex-portfolio` (folder name is local-only; remote repo MUST be `alex-wu.github.io`).
 
@@ -58,64 +59,30 @@ site: "https://alex-wu.github.io",
 ```
 Do **not** set `base` — user sites serve from root.
 
-### 3b. Site metadata — `src/consts.ts` (or `src/siteConfig.ts`)
+### 3b. Site metadata — `src/consts.ts`
 
+Edit SITE.TITLE, SITE.DESCRIPTION, SITE.EMAIL, HOME.TITLE/DESCRIPTION, BLOG, PROJECTS, and SOCIALS (replace template's GitHub/Website/Twitter URLs with your own — or remove entries you don't have).
+
+Real schema:
 ```ts
-export const SITE = {
-  NAME: "Alex Wu",
-  EMAIL: "alex.w.w.h@gmail.com",
-  NUM_POSTS_ON_HOMEPAGE: 3,
-  NUM_WORKS_ON_HOMEPAGE: 2,
-  NUM_PROJECTS_ON_HOMEPAGE: 3,
-};
-
-export const HOME = {
+export const SITE: Site = {
   TITLE: "Alex Wu",
   DESCRIPTION: "One-line positioning statement.",
+  EMAIL: "alex.w.w.h@gmail.com",
+  NUM_POSTS_ON_HOMEPAGE: 5,
+  NUM_PROJECTS_ON_HOMEPAGE: 3,
 };
-// keep BLOG / WORK / PROJECTS exports below; just edit titles/descriptions
+// HOME / BLOG / PROJECTS — edit titles/descriptions
+// SOCIALS — replace with your accounts
 ```
 
+Collections: only `blog` and `projects` (no `work`).
+
 ---
 
-## 4. Seed minimal content
+## 4. Keep template content for first deploy
 
-Wipe samples, drop one placeholder per collection so build doesn't fail on empty:
-
-```bash
-rm -f src/content/blog/*.md src/content/projects/*.md src/content/work/*.md
-
-cat > src/content/blog/hello-world.md <<'EOF'
----
-title: "Hello, world"
-description: "First post."
-date: "2026-04-26"
-draft: false
----
-Placeholder.
-EOF
-
-cat > src/content/projects/dataviz.md <<'EOF'
----
-title: "Data Visualization"
-description: "Interactive dashboards."
-date: "2026-04-26"
-demoURL: "https://alex-wu.github.io/dataviz/"
-repoURL: "https://github.com/alex-wu/dataviz"
----
-Placeholder.
-EOF
-
-cat > src/content/work/example.md <<'EOF'
----
-company: "Example Co"
-role: "Role"
-dateStart: "2024-01-01"
-dateEnd: "Now"
----
-Placeholder.
-EOF
-```
+Template ships with sample posts in `src/content/blog/` and `src/content/projects/`. Leave them — the site renders clean. Replace with your own content after the first successful deploy.
 
 ---
 
@@ -185,7 +152,7 @@ jobs:
 ```bash
 git add -A
 git commit -m "init: astro micro"
-git remote add origin git@github.com:alex-wu/alex-wu.github.io.git
+git remote add origin https://github.com/alex-wu/alex-wu.github.io.git
 git push -u origin main
 ```
 
