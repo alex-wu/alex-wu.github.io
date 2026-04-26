@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# commit-msg — enforces conventional commit prefix.
+# Allowed prefixes match the global rule in ~/.claude/CLAUDE.md.
+
+set -e
+
+msg_file="$1"
+first_line=$(head -n1 "$msg_file")
+
+# Skip merge commits, revert commits, and fixup/squash commits — git generates these
+# and they're known-good.
+if [[ "$first_line" =~ ^(Merge|Revert|fixup!|squash!|amend!) ]]; then
+  exit 0
+fi
+
+# Skip empty messages — git will reject them anyway.
+if [[ -z "$first_line" ]]; then
+  exit 0
+fi
+
+allowed='^(feat|fix|refactor|docs|test|chore|init|pre|style|perf|ci|post):[[:space:]].+'
+
+if [[ ! "$first_line" =~ $allowed ]]; then
+  echo ""
+  echo "✗ commit-msg blocked: message must start with a conventional prefix." >&2
+  echo "" >&2
+  echo "  Got:      $first_line" >&2
+  echo "  Expected: <type>: <description>" >&2
+  echo "  Types:    feat fix refactor docs test chore init pre style perf ci post" >&2
+  echo "" >&2
+  echo "  Examples:" >&2
+  echo "    post: hello world" >&2
+  echo "    fix: typo in about page" >&2
+  echo "    chore: bump astro to 5.14" >&2
+  echo "" >&2
+  echo "  Bypass (do NOT use casually): git commit --no-verify" >&2
+  exit 1
+fi
+
+exit 0

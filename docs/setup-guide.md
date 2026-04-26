@@ -68,7 +68,7 @@ Real schema:
 export const SITE: Site = {
   TITLE: "Alex Wu",
   DESCRIPTION: "One-line positioning statement.",
-  EMAIL: "[redacted]",
+  EMAIL: "",
   NUM_POSTS_ON_HOMEPAGE: 5,
   NUM_PROJECTS_ON_HOMEPAGE: 3,
 };

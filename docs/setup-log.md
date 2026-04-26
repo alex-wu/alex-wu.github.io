@@ -28,7 +28,7 @@ Record of the bootstrap session on 2026-04-26. Captures deviations from `setup-g
 `git commit` failed on first run because `user.name`/`user.email` were not set anywhere. Fixed by setting **repo-local only** (not `--global`, per the user's `~/.claude/CLAUDE.md` rule):
 
 ```bash
-git config user.email "[redacted]"   # initial — replaced below
+git config user.email "[redacted]"             # initial — replaced below
 git config user.name "Alex Wu"
 ```
 

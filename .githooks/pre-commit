@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# pre-commit — blocks real-email commits, accidental dist/node_modules, and secrets.
+# Versioned in .githooks/. Activated via `git config core.hooksPath .githooks` (see scripts/install-hooks.sh).
+
+set -e
+
+fail() {
+  echo ""
+  echo "✗ pre-commit blocked: $1" >&2
+  echo "  Fix: $2" >&2
+  echo ""
+  echo "  To bypass (do NOT use casually): git commit --no-verify" >&2
+  exit 1
+}
+
+# 1. Block real-email author. Must be a GitHub noreply address.
+email=$(git config user.email || true)
+if [[ -z "$email" ]]; then
+  fail "git user.email is not set" \
+       "git config user.email \"<id>+<username>@users.noreply.github.com\""
+fi
+if [[ "$email" != *@users.noreply.github.com ]]; then
+  fail "author email '$email' is not a GitHub noreply address" \
+       "git config user.email \"3050328+alex-wu@users.noreply.github.com\""
+fi
+
+# 2. Block staged generated/sensitive paths.
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+while IFS= read -r path; do
+  [[ -z "$path" ]] && continue
+  case "$path" in
+    dist/*|node_modules/*|.astro/*)
+      fail "staged generated path: $path" \
+           "git rm --cached -r \"${path%%/*}\" && retry. These should never be committed."
+      ;;
+    .env|.env.*|*.env)
+      fail "staged environment file: $path" \
+           "git rm --cached \"$path\". Never commit env files."
+      ;;
+    *secret*|*token*|*credential*|*.pem|*.key)
+      fail "staged sensitive-looking file: $path" \
+           "If this is a false positive, rename it. Otherwise: git rm --cached \"$path\"."
+      ;;
+  esac
+done <<< "$staged"
+
+exit 0

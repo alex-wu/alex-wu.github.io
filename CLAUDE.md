@@ -11,13 +11,23 @@ The local folder is `D:\Dev\Github\alex-portfolio` but the **remote repo MUST be
 ## Commands
 
 ```bash
-npm run dev          # local dev at http://localhost:4321
-npm run build        # astro check + astro build → dist/
-npm run preview      # serve dist/ locally
-git push             # = deploy. Workflow rebuilds + publishes in ~90s
+npm run dev               # local dev at http://localhost:4321
+npm run build             # astro check + astro build → dist/
+npm run preview           # serve dist/ locally
+git push origin draft     # stages on draft branch — does NOT deploy
+git push origin main      # = deploy. Workflow rebuilds + publishes in ~90s
 ```
 
 There is no test suite. `npm run build` is the gate (it includes `astro check` for type errors).
+
+## Workflow
+
+Edits go through `draft` → `main`. Hooks are active locally and enforce conventional commit prefixes, block real-email commits, block accidental `dist/`/secret commits, and block `pre: snapshot` commits from being pushed.
+
+- `docs/content-workflow.md` — adding/editing/drafting posts
+- `docs/git-workflow.md` — branching, snapshots, reverting
+- `docs/safeguards.md` — what each hook enforces, how to install, exit criteria for merging into main
+- `bash scripts/install-hooks.sh` — activate hooks on a fresh clone (idempotent)
 
 ## Architecture
 
@@ -67,5 +77,6 @@ Tags are auto-routed: any string in a post's `tags: []` becomes a page at `/tags
 
 ## Reference
 
-- `setup-guide.md` — the one-time bootstrap walkthrough (Windows, Git Bash, no SSH, Astro Micro template). Not part of the build.
-- `setup-log.md` — historical session log: locked decisions, deviations from the generic guide, the exact commands that resolved the GH007 email-privacy block. Read first if a similar issue resurfaces.
+- `docs/README.md` — index for all maintenance docs.
+- `docs/setup-guide.md` — the one-time bootstrap walkthrough (Windows, Git Bash, no SSH, Astro Micro template). Not part of the build.
+- `docs/setup-log.md` — historical session log: locked decisions, deviations from the generic guide, the exact commands that resolved the GH007 email-privacy block. Read first if a similar issue resurfaces.

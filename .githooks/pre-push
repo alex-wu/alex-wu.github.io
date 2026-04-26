@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# pre-push — blocks pushing pre: snapshot commits and bare --force pushes to main.
+# Reads stdin: <local_ref> <local_sha> <remote_ref> <remote_sha> per ref being pushed.
+
+set -e
+
+fail() {
+  echo ""
+  echo "✗ pre-push blocked: $1" >&2
+  echo "  Fix: $2" >&2
+  echo ""
+  echo "  To bypass (do NOT use casually): git push --no-verify" >&2
+  exit 1
+}
+
+zero_sha="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "$local_ref" ]] && continue
+
+  # Skip branch deletions (local_sha is all zeros).
+  if [[ "$local_sha" == "$zero_sha" ]]; then
+    continue
+  fi
+
+  # Determine the commit range being pushed.
+  if [[ "$remote_sha" == "$zero_sha" ]]; then
+    # New branch — check all commits on it that aren't on main.
+    range=$(git rev-list "$local_sha" --not --remotes 2>/dev/null || echo "")
+  else
+    range=$(git rev-list "$remote_sha".."$local_sha" 2>/dev/null || echo "")
+  fi
+
+  # 1. Block any commit with a "pre:" prefix from being pushed.
+  for sha in $range; do
+    msg=$(git log -1 --format=%s "$sha")
+    if [[ "$msg" =~ ^pre: ]]; then
+      fail "commit $sha has message '$msg' — pre: snapshots are local-only" \
+           "Squash before pushing: git reset --soft <last-real-commit> && git commit -m \"<real message>\""
+    fi
+  done
+done
+
+# 2. Bare --force pushes to main are dangerous. Encourage --force-with-lease.
+# Detect via the GIT_PUSH_OPTION_* env or by inspecting parent process args.
+# Simpler heuristic: if pushing main and any of the per-ref entries indicate non-fast-forward,
+# require an explicit force-with-lease (set via env GIT_FORCE_WITH_LEASE or by user using --force-with-lease).
+# We detect "--force" without "--with-lease" by reading the original argv from /proc if available.
+if [[ -r /proc/$PPID/cmdline ]]; then
+  parent_cmd=$(tr '\0' ' ' < /proc/$PPID/cmdline)
+  if [[ "$parent_cmd" == *" --force "* || "$parent_cmd" == *" -f "* ]] \
+     && [[ "$parent_cmd" != *"--force-with-lease"* ]] \
+     && [[ "$parent_cmd" == *" main"* || "$parent_cmd" == *" origin main"* ]]; then
+    fail "bare --force push to main detected" \
+         "Use --force-with-lease instead: git push --force-with-lease origin main"
+  fi
+fi
+
+exit 0
