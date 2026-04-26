@@ -27,7 +27,8 @@ Astro 5 + Tailwind 4 + MDX. Static SSG, no client-side framework. Pagefind for s
 - `src/pages/` — file-based routing. `[...id].astro` files are dynamic routes that read from collections via `getCollection()`.
 - `src/components/` — Astro components (`.astro`). `Head.astro`, `Header.astro`, `Footer.astro` wrap every page via `src/layouts/Layout.astro`.
 - `src/consts.ts` — site-wide config: SITE (TITLE/EMAIL/post counts), HOME/BLOG/PROJECTS metadata, SOCIALS array. Editing this is usually faster than chasing strings through components.
-- `src/styles/global.css` — Tailwind 4 imports + custom CSS variables for the shiki code theme.
+- `src/styles/global.css` — **Tailwind 4 syntax**: uses `@import 'tailwindcss'`, `@plugin`, `@theme`, `@custom-variant` — NOT v3's `@tailwind base/components/utilities` directives. Pasting v3 snippets here will silently break styles. Shiki code-block colors are driven by the CSS vars defined in this file (theme set to `css-variables` in `astro.config.mjs`), so dark/light/system theme toggle changes both UI and code blocks together.
+- `src/types.ts` — TypeScript types (`Site`, `Metadata`, `Socials`) imported by `src/consts.ts`. Adding a new field to `SITE` means updating both files.
 - `astro.config.mjs` — `site` is hardcoded to `https://alex-wu.github.io`. If a custom domain is added later, update this string AND drop a `public/CNAME` file.
 - `.github/workflows/deploy.yml` — uses `withastro/action@v3` (defaults: Node 22, npm) + `actions/deploy-pages@v4`. Triggers on push to `main` and manual `workflow_dispatch`.
 
@@ -40,16 +41,17 @@ Astro 5 + Tailwind 4 + MDX. Static SSG, no client-side framework. Pagefind for s
 
 ## Working with content
 
-To add a post:
+To add a blog post: drop a `.md` (or `.mdx`) into `src/content/blog/` (top-level file or subfolder with `index.md` — both work). Frontmatter must match the Zod schema in `src/content.config.ts`:
 
-```bash
-# new blog post
-$EDITOR src/content/blog/<slug>.md
-# frontmatter must match the schema in src/content.config.ts:
-#   title (string), description (string), date (date), draft? (bool), tags? (string[])
-```
+- blog: `title`, `description`, `date` (string coerced to Date), optional `draft` (bool), optional `tags` (string[])
+- projects: `title`, `description`, `date`, optional `draft`, optional `demoURL`, optional `repoURL`
 
-The `draft: true` flag hides a post from production builds. The `08-prev-next-order-example` post in the template demos how `order` field controls navigation order.
+Two non-obvious behaviors:
+
+- **Posts are sorted by `date` frontmatter**, not by filename or folder name. Folder-name prefixes like `01-`, `02-` in the template are organizational only — sort order ignores them.
+- **`draft: true` is filtered manually** by each listing page via `.filter(p => !p.data.draft)` (see `src/pages/blog/index.astro` and `src/pages/blog/[...id].astro`). It's a convention, not a framework feature — if you add a new page that lists posts, replicate the filter or drafts will leak.
+
+Tags are auto-routed: any string in a post's `tags: []` becomes a page at `/tags/<tag>/` via `src/pages/tags/[...id].astro`. No manual registration.
 
 ## When something breaks
 
@@ -58,6 +60,12 @@ The `draft: true` flag hides a post from production builds. The `08-prev-next-or
 - Workflow fails on install → delete `package-lock.json`, rerun `npm install` locally, commit the new lockfile, push
 - Push rejected for email privacy → never bypass with `--no-verify` or by making email public; rewrite the offending commits' author with the noreply email instead
 
+## Images
+
+- Drop image files anywhere under `src/` and `import` them in components — Astro's `astro:assets` pipeline optimizes them (resize, webp conversion, content-hashed filenames).
+- Files in `public/` are served raw with no optimization — use only for `favicon.svg`, `CNAME`, `robots.txt`, and similar fixed-path assets.
+
 ## Reference
 
-- `setup-guide.md` — the full one-time setup walkthrough used to bootstrap this repo. Keep for future reference; not part of the build.
+- `setup-guide.md` — the one-time bootstrap walkthrough (Windows, Git Bash, no SSH, Astro Micro template). Not part of the build.
+- `setup-log.md` — historical session log: locked decisions, deviations from the generic guide, the exact commands that resolved the GH007 email-privacy block. Read first if a similar issue resurfaces.
